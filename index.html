@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Search and Upload</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .results { display: flex; flex-wrap: wrap; }
+        .photo { width: 200px; margin: 10px; }
+        img { width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <h1>Photo Search and Upload</h1>
+
+    <!-- Search Form -->
+    <div>
+        <label for="searchQuery">Search for Photos:</label>
+        <input type="text" id="searchQuery" placeholder="Enter search query...">
+        <button id="searchBtn">Search</button>
+    </div>
+
+    <!-- Results Display -->
+    <div class="results" id="results"></div>
+
+    <!-- Upload Form -->
+    <div>
+        <h3>Upload Photo</h3>
+        <input type="file" id="photoUpload">
+        <input type="text" id="customLabels" placeholder="Enter custom labels (comma-separated)">
+        <button id="uploadBtn">Upload Photo</button>
+    </div>
+
+    <script src="https://assign3-frontend.s3.us-east-1.amazonaws.com/apigClient.js"></script>
+    <script src="https://assign3-frontend.s3.us-east-1.amazonaws.com/app.js"></script>
+</body>
+</html>
