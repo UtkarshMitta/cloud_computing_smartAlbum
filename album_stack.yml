@@ -15,33 +15,33 @@ Resources:
         Type: "AWS::S3::BucketPolicy"
         Properties:
             Bucket: !Ref S3Bucket
-            PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-                - Sid: "AllowPublicRead"
-                Effect: "Allow"
-                Principal: "*"
-                Action: "s3:GetObject"
-                Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-                - Sid: "AllowPublicWrite"
-                Effect: "Allow"
-                Principal: "*"
-                Action: "s3:PutObject"
-                Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+            PolicyDocument: IndexLambda
+                Version: "2012-10-17"
+                Statement:
+                    - Sid: "AllowPublicRead"
+                    Effect: "Allow"
+                    Principal: "*"
+                    Action: "s3:GetObject"
+                    Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+                    - Sid: "AllowPublicWrite"
+                    Effect: "Allow"
+                    Principal: "*"
+                    Action: "s3:PutObject"
+                    Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
 
     S3BucketPolicy2:
         Type: "AWS::S3::BucketPolicy"
         Properties:
             Bucket: !Ref S3Bucket2
-            PolicyDocument:
-            Version: "2008-10-17"
-            Id: "PolicyForPublicWebsiteContent"
-            Statement:
-                - Sid: "PublicReadGetObject"
-                Effect: "Allow"
-                Principal: "*"
-                Action: "s3:GetObject"
-                Resource: !Sub "arn:aws:s3:::${S3Bucket2}/*"
+            PolicyDocument: SearchLambda
+                Version: "2008-10-17"
+                Id: "PolicyForPublicWebsiteContent"
+                Statement:
+                    - Sid: "PublicReadGetObject"
+                    Effect: "Allow"
+                    Principal: "*"
+                    Action: "s3:GetObject"
+                    Resource: !Sub "arn:aws:s3:::${S3Bucket2}/*"
 
     LambdaFunction:
         Type: "AWS::Lambda::Function"
@@ -64,20 +64,6 @@ Resources:
             Layers: 
               - !Sub "arn:aws:lambda:us-east-1:761018873242:layer:opensearchpy:2"
 
-
-Info
-
-Tutorials
-Learn how to implement common use cases in AWS Lambda.
-
-Create a simple web app
-
-In this tutorial you will learn how to:
-
-Build a simple web app, consisting of a Lambda function with a function URL that outputs a webpage
-Invoke your function through its function URL
-Learn more 
-Start tutorial
 
     LambdaFunction2:
         Type: "AWS::Lambda::Function"
@@ -120,20 +106,6 @@ Start tutorial
                 Mode: "PassThrough"
 
 
-Info
-
-Tutorials
-Learn how to implement common use cases in AWS Lambda.
-
-Create a simple web app
-
-In this tutorial you will learn how to:
-
-Build a simple web app, consisting of a Lambda function with a function URL that outputs a webpage
-Invoke your function through its function URL
-Learn more 
-Start tutorial
-
     ApiGatewayRestApi:
         Type: "AWS::ApiGateway::RestApi"
         Properties:
@@ -146,15 +118,3 @@ Start tutorial
             EndpointConfiguration: 
                 Types: 
                   - "REGIONAL"
-
-    OpenSearchServiceDomain:
-        Type: "AWS::OpenSearchService::Domain"
-        Properties:
-            DomainName: "photos-ha1"
-            EngineVersion: "OpenSearch_1.2"
-            ClusterConfig: 
-                InstanceType: "t3.small.search"
-            EBSOptions: 
-                EBSEnabled: true
-                VolumeType: "gp2"
-                VolumeSize: 10
