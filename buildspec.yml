@@ -1,0 +1,28 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.13
+    commands:
+      - echo "Installing dependencies for search-photos..."
+      - cd lambda_functions/search-photos
+      - pip install -r requirements.txt -t .
+      - cd ../../
+      - echo "Installing dependencies for index-photos..."
+      - cd lambda_functions/index-photos
+      - pip install -r requirements.txt -t .
+      - cd ../../
+  build:
+    commands:
+      - echo "Packaging search-photos..."
+      - cd lambda_functions/search-photos
+      - zip -r ../../search-photos.zip .
+      - cd ../../
+      - echo "Packaging index-photos..."
+      - cd lambda_functions/index-photos
+      - zip -r ../../index-photos.zip .
+      - cd ../../
+artifacts:
+  files:
+    - search-photos.zip
+    - index-photos.zip

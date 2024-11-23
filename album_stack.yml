@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Cloud Fomration template for smart album"
+Resources:
+    S3Bucket:
+        Type: "AWS::S3::Bucket"
+        Properties:
+            BucketName: "assign3-photos"
+
+    S3Bucket2:
+        Type: "AWS::S3::Bucket"
+        Properties:
+            BucketName: "assign3-frontend"
+
+    S3BucketPolicy:
+        Type: "AWS::S3::BucketPolicy"
+        Properties:
+            Bucket: !Ref S3Bucket
+            PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+                - Sid: "AllowPublicRead"
+                Effect: "Allow"
+                Principal: "*"
+                Action: "s3:GetObject"
+                Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+                - Sid: "AllowPublicWrite"
+                Effect: "Allow"
+                Principal: "*"
+                Action: "s3:PutObject"
+                Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+
+    S3BucketPolicy2:
+        Type: "AWS::S3::BucketPolicy"
+        Properties:
+            Bucket: !Ref S3Bucket2
+            PolicyDocument:
+            Version: "2008-10-17"
+            Id: "PolicyForPublicWebsiteContent"
+            Statement:
+                - Sid: "PublicReadGetObject"
+                Effect: "Allow"
+                Principal: "*"
+                Action: "s3:GetObject"
+                Resource: !Sub "arn:aws:s3:::${S3Bucket2}/*"
+
+    LambdaFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Description: ""
+            FunctionName: "index-photos"
+            Handler: "lambda_function.lambda_handler"
+            Architectures: 
+              - "x86_64"
+            Code: 
+                S3Bucket: "assign3-codestorage"
+                S3Key: "index-photos.py.zip"
+                # S3ObjectVersion: "NgJ0D2NYG3zi9dUpFaYTYB_CGeAb1c7X"
+            MemorySize: 128
+            Role: !Sub "arn:aws:iam::761018873242:role/lambda-s3-trigger-tutorial"
+            Runtime: "python3.13"
+            Timeout: 3
+            TracingConfig: 
+                Mode: "PassThrough"
+            Layers: 
+              - !Sub "arn:aws:lambda:us-east-1:761018873242:layer:opensearchpy:2"
+
+
+Info
+
+Tutorials
+Learn how to implement common use cases in AWS Lambda.
+
+Create a simple web app
+
+In this tutorial you will learn how to:
+
+Build a simple web app, consisting of a Lambda function with a function URL that outputs a webpage
+Invoke your function through its function URL
+Learn more 
+Start tutorial
+
+    LambdaFunction2:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Description: ""
+            FunctionName: "search-photos"
+            Handler: "lambda_function.lambda_handler"
+            Architectures: 
+              - "x86_64"
+            Code: 
+                S3Bucket: "assign3-codestorage"
+                S3Key: "search-photos.py.zip"
+                # S3ObjectVersion: "qdODs5ycA1F2KzO_e8Lv43ronMzCsgs2"
+            MemorySize: 128
+            Role: !Sub "arn:aws:iam::761018873242:role/service-role/search-photos-role-co9clzmi"
+            Runtime: "python3.13"
+            Timeout: 3
+            TracingConfig: 
+                Mode: "PassThrough"
+            Layers: 
+              - !Sub "arn:aws:lambda:us-east-1:761018873242:layer:requests:1"
+
+    LambdaFunction3:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Description: ""
+            FunctionName: "temp"
+            Handler: "lambda_function.lambda_handler"
+            Architectures: 
+              - "x86_64"
+            Code: 
+                S3Bucket: "assign3-codestorage"
+                S3Key: "temp.py.zip"
+                # S3ObjectVersion: "qdODs5ycA1F2KzO_e8Lv43ronMzCsgs2"
+            MemorySize: 128
+            Role: !Sub "arn:aws:iam::761018873242:role/service-role/temp-role-s91f6oem"
+            Runtime: "python3.13"
+            Timeout: 3
+            TracingConfig: 
+                Mode: "PassThrough"
+
+
+Info
+
+Tutorials
+Learn how to implement common use cases in AWS Lambda.
+
+Create a simple web app
+
+In this tutorial you will learn how to:
+
+Build a simple web app, consisting of a Lambda function with a function URL that outputs a webpage
+Invoke your function through its function URL
+Learn more 
+Start tutorial
+
+    ApiGatewayRestApi:
+        Type: "AWS::ApiGateway::RestApi"
+        Properties:
+            Name: "AI Search Photos"
+            ApiKeySourceType: "HEADER"
+            BinaryMediaTypes: 
+              - "image/jpg"
+              - "image/jpeg"
+              - "image/png"
+            EndpointConfiguration: 
+                Types: 
+                  - "REGIONAL"
+
+    OpenSearchServiceDomain:
+        Type: "AWS::OpenSearchService::Domain"
+        Properties:
+            DomainName: "photos-ha1"
+            EngineVersion: "OpenSearch_1.2"
+            ClusterConfig: 
+                InstanceType: "t3.small.search"
+            EBSOptions: 
+                EBSEnabled: true
+                VolumeType: "gp2"
+                VolumeSize: 10
