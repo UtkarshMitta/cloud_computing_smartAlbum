@@ -110,7 +110,7 @@ Resources:
         Properties:
             Description: ""
             FunctionName: "index-photos-cloudFunction"
-            Handler: "lambda_function.lambda_handler"
+            Handler: "index-photos-cloudFunction.lambda_handler"
             Architectures: 
               - "x86_64"
             Code: 
@@ -124,7 +124,7 @@ Resources:
         Properties:
             Description: ""
             FunctionName: "search-photos-cloudFunction"
-            Handler: "lambda_function.lambda_handler"
+            Handler: "search-photos-cloudFunction.lambda_handler"
             Role: !GetAtt LambdaExecutionRole.Arn
             Runtime: "python3.13"
             Architectures: 
