@@ -38,7 +38,7 @@ def get_keywords(input_text):
         text=input_text,
         sessionId='761018873242206'
     )
-    print(response)
+    print('Response: ',response)
     response=response['interpretations'][0]['intent']['slots']['keyword']['value']['resolvedValues']
     return response
 
