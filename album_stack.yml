@@ -1,120 +1,165 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "Cloud Fomration template for smart album"
 Resources:
-    S3Bucket:
+    FrontBucket:
         Type: "AWS::S3::Bucket"
         Properties:
-            BucketName: "assign3-photos"
+            BucketName: !Sub "assign3-frontend-${AWS::AccountId}-${AWS::Region}"
+            WebsiteConfiguration:
+                IndexDocument: index.html
+            OwnershipControls:
+                Rules:
+                    - ObjectOwnership: BucketOwnerEnforced
+            PublicAccessBlockConfiguration:
+                BlockPublicAcls: false
+                IgnorePublicAcls: false
+                BlockPublicPolicy: false
+                RestrictPublicBuckets: false
 
-    S3Bucket2:
-        Type: "AWS::S3::Bucket"
-        Properties:
-            BucketName: "assign3-frontend"
-
-    S3BucketPolicy:
+    FrontBucketPolicy:
         Type: "AWS::S3::BucketPolicy"
         Properties:
-            Bucket: !Ref S3Bucket
-            PolicyDocument: IndexLambda
+            Bucket: !Ref FrontBucket
+            PolicyDocument:
                 Version: "2012-10-17"
-                Statement:
-                    - Sid: "AllowPublicRead"
-                      Effect: "Allow"
-                      Principal: "*"
-                      Action: "s3:GetObject"
-                      Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-                    - Sid: "AllowPublicWrite"
-                      Effect: "Allow"
-                      Principal: "*"
-                      Action: "s3:PutObject"
-                      Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-
-    S3BucketPolicy2:
-        Type: "AWS::S3::BucketPolicy"
-        Properties:
-            Bucket: !Ref S3Bucket2
-            PolicyDocument: SearchLambda
-                Version: "2008-10-17"
                 Id: "PolicyForPublicWebsiteContent"
                 Statement:
-                    - Sid: "PublicReadGetObject"
+                    - Sid: PublicRead
                       Effect: "Allow"
                       Principal: "*"
                       Action: "s3:GetObject"
-                      Resource: !Sub "arn:aws:s3:::${S3Bucket2}/*"
+                      Resource: !Sub "arn:aws:s3:::${FrontBucket}/*"
 
-    LambdaFunction:
+    PhotosBucket:
+        Type: "AWS::S3::Bucket"
+        Properties:
+            BucketName: !Sub "assign3-photos-utsu2024-${AWS::AccountId}-${AWS::Region}"
+            PublicAccessBlockConfiguration:
+                BlockPublicAcls: false
+                IgnorePublicAcls: false
+                BlockPublicPolicy: false
+                RestrictPublicBuckets: false
+
+    PhotosBucketPolicy:
+        DependsOn: PhotosBucket
+        Type: "AWS::S3::BucketPolicy"
+        Properties:
+            Bucket: !Ref PhotosBucket
+            PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Sid: RekognitionAccess
+                      Effect: Allow
+                      Principal:
+                        Service: rekognition.amazonaws.com
+                      Action:
+                        - s3:PutObject
+                        - s3:GetObject
+                      Resource: !Join
+                        - ""
+                        - - "arn:aws:s3:::"
+                          - !Ref PhotosBucket
+                          - "/*"
+                      Condition:
+                        StringEquals:
+                            aws:SourceAccount: !Ref AWS::AccountId
+                    - Sid: PublicRead
+                      Effect: "Allow"
+                      Principal: "*"
+                      Action: 
+                        - "s3:GetObject"
+                      Resource: !Sub "arn:aws:s3:::${PhotosBucket}/*"
+
+    LambdaExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: !Sub "lambda-execution-role-${AWS::AccountId}-${AWS::Region}"
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service: lambda.amazonaws.com
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: LambdaPolicy
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - s3control:PutPublicAccessBlock
+                          Resource: "*"
+                        - Effect: Allow
+                          Action:
+                           - s3:PutObject
+                           - s3:GetObject
+                           - s3:ListBucket
+                          Resource:
+                            - !Sub "arn:aws:s3:::${PhotosBucket}"
+                            - !Sub "arn:aws:s3:::${PhotosBucket}/*"
+                        - Effect: Allow
+                          Action:
+                            - logs:CreateLogGroup
+                            - logs:CreateLogStream
+                            - logs:PutLogEvents
+                          Resource: "*"
+
+    IndexLambda:
         Type: "AWS::Lambda::Function"
         Properties:
             Description: ""
-            FunctionName: "index-photos"
+            FunctionName: "index-photos-cloudFunction"
             Handler: "lambda_function.lambda_handler"
             Architectures: 
               - "x86_64"
             Code: 
                 S3Bucket: "assign3-codestorage"
                 S3Key: "index-photos.py.zip"
-                # S3ObjectVersion: "NgJ0D2NYG3zi9dUpFaYTYB_CGeAb1c7X"
-            MemorySize: 128
-            Role: !Sub "arn:aws:iam::761018873242:role/lambda-s3-trigger-tutorial"
+            Role: !GetAtt LambdaExecutionRole.Arn
             Runtime: "python3.13"
-            Timeout: 3
-            TracingConfig: 
-                Mode: "PassThrough"
-            Layers: 
-              - !Sub "arn:aws:lambda:us-east-1:761018873242:layer:opensearchpy:2"
 
-
-    LambdaFunction2:
+    SearchLambda:
         Type: "AWS::Lambda::Function"
         Properties:
             Description: ""
-            FunctionName: "search-photos"
+            FunctionName: "search-photos-cloudFunction"
             Handler: "lambda_function.lambda_handler"
+            Role: !GetAtt LambdaExecutionRole.Arn
+            Runtime: "python3.13"
             Architectures: 
               - "x86_64"
             Code: 
                 S3Bucket: "assign3-codestorage"
                 S3Key: "search-photos.py.zip"
-                # S3ObjectVersion: "qdODs5ycA1F2KzO_e8Lv43ronMzCsgs2"
-            MemorySize: 128
-            Role: !Sub "arn:aws:iam::761018873242:role/service-role/search-photos-role-co9clzmi"
-            Runtime: "python3.13"
-            Timeout: 3
-            TracingConfig: 
-                Mode: "PassThrough"
-            Layers: 
-              - !Sub "arn:aws:lambda:us-east-1:761018873242:layer:requests:1"
-
-    LambdaFunction3:
-        Type: "AWS::Lambda::Function"
-        Properties:
-            Description: ""
-            FunctionName: "temp"
-            Handler: "lambda_function.lambda_handler"
-            Architectures: 
-              - "x86_64"
-            Code: 
-                S3Bucket: "assign3-codestorage"
-                S3Key: "temp.py.zip"
-                # S3ObjectVersion: "qdODs5ycA1F2KzO_e8Lv43ronMzCsgs2"
-            MemorySize: 128
-            Role: !Sub "arn:aws:iam::761018873242:role/service-role/temp-role-s91f6oem"
-            Runtime: "python3.13"
-            Timeout: 3
-            TracingConfig: 
-                Mode: "PassThrough"
-
-
+            
     ApiGatewayRestApi:
         Type: "AWS::ApiGateway::RestApi"
         Properties:
-            Name: "AI Search Photos"
-            ApiKeySourceType: "HEADER"
-            BinaryMediaTypes: 
-              - "image/jpg"
-              - "image/jpeg"
-              - "image/png"
-            EndpointConfiguration: 
-                Types: 
-                  - "REGIONAL"
+            Name: PhotosRestApi
+            BodyS3Location:
+                Bucket: assign3-codestorage
+                Key: swagger.yaml
+
+    LambdaPermissionSearch:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref SearchLambda
+            Action: lambda:InvokeLambdaFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*"
+    
+    LambdaPermissionIndex:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref IndexLambda
+            Action: lambda:InvokeFunction
+            Principal: apigateway.amazonaws.com
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*"
+
+Outputs:
+    FrontBucketUrl:
+        Value: !Sub "http://${FrontBucket}.s3-website-${AWS::Region}.amazonaws.com"
+    
+    ApiGatewayUrl:
+        Value: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod/photos"
