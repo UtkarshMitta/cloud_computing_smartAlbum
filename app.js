@@ -1,107 +1,129 @@
-// Replace with your API Gateway endpoint
-const apiGatewayUrl = "https://vfb11tukva.execute-api.us-east-1.amazonaws.com/dev";
+$(document).ready(function () {
+    // Create a new API Gateway client instance
+    var apigClient = apigClientFactory.newClient();
 
-// Function to handle search
-$('#searchBtn').on('click', function() {
-    const query = $('#searchQuery').val();
-    
-    if (!query) {
-        alert('Please enter a search query.');
-        return;
-    }
+    // Search button click handler
+    $('#searchBtn').click(function () {
+        var query = $('#searchQuery').val();
 
-    // Fetch photos based on search query
-    $.ajax({
-        url: `${apiGatewayUrl}/search?q=${encodeURIComponent(query)}`,
-        method: 'GET',
-        success: function(data) {
-            console.log('Raw data received:', data);
-            console.log('Data type:', typeof data);
-            console.log('Data stringified:', JSON.stringify(data));
-            displayResults(data);
-        },
-        error: function(error) {
-            console.error(error);
-            alert('Error fetching results.');
+        if (!query) {
+            alert('Please enter a search query.');
+            return;
         }
-    });
-});
 
-// Function to display results
-function displayResults(data) {
-    const resultsDiv = $('#results');
-    resultsDiv.empty(); // Clear any previous results
-
-    console.log('Displaying results for:', data);
-
-    if (data && data.results && Array.isArray(data.results)) {
-        data.results.forEach(photoUrl => {
-            console.log('Adding image:', photoUrl);
-            resultsDiv.append(`
-                <div class="photo">
-                    <img src="${photoUrl}" alt="Search result" onerror="this.onerror=null; this.style.display='none'; this.parentNode.innerHTML='Image could not be loaded';">
-                </div>
-            `);
-        });
-
-        if (data.results.length === 0) {
-            resultsDiv.append('<p>No results found.</p>');
-        }
-    } else {
-        resultsDiv.append('<p>Invalid data format received.</p>');
-        console.error('Invalid data format:', data);
-    }
-}
-
-// Function to handle photo upload
-$('#uploadBtn').on('click', async function () {
-    const fileInput = $('#photoUpload')[0];
-    const labelsInput = $('#customLabels').val();
-    const customLabels = labelsInput.split(',').map(label => label.trim()); // Convert to an array
-
-    if (!fileInput.files.length) {
-        alert('Please select a photo to upload.');
-        return;
-    }
-
-    const file = fileInput.files[0];
-
-    try {
-        // Convert the image file to a Base64 string
-        const base64Image = await convertToBase64(file);
-
-        // Send the PUT request with customLabels in the header
-        $.ajax({
-            url: `${apiGatewayUrl}/upload`, // Your actual API Gateway endpoint
-            method: 'PUT',
+        // API parameters for the search endpoint
+        var params = {
+            q: query // Pass the query as a parameter
+        };
+        var body = {};
+        var additionalParams = {
             headers: {
-                'Content-Type': 'application/json', // Set the content type
-                'x-amz-meta-customLabels': customLabels.join(',') // Add custom labels as a header
-            },
-            data: JSON.stringify({
-                filename: file.name, // Optional: include the filename
-                imageData: base64Image // Base64-encoded image string
-            }),
-            success: function (response) {
-                console.log('Custom Labels sent as header:', customLabels);
-                alert('Photo uploaded successfully!');
-            },
-            error: function (error) {
-                console.error(error);
-                alert('Error uploading photo.');
+                'Content-Type': 'application/json'
             }
-        });
-    } catch (error) {
-        console.error('Error converting file to Base64:', error);
-        alert('Failed to process the photo.');
-    }
-});
-// Function to convert a file to a Base64 string
-function convertToBase64(file) {
-    return new Promise((resolve, reject) => {
+        };
+
+        // Call the searchGet method
+        apigClient.searchGet(params, body, additionalParams)
+            .then(function (result) {
+                console.log('Search response:', result.data.results);
+                displayResults(result.data.results);
+            })
+            .catch(function (error) {
+                console.error('Error during search:', error);
+                alert('Error during search. Check the console for details.');
+            });
+    });
+
+    $('#uploadBtn').click(function () {
+        const fileInput = $('#photoUpload')[0];
+        const customLabels = $('#customLabels').val();
+    
+        if (!fileInput.files.length) {
+            alert('Please select a photo to upload.');
+            return;
+        }
+    
+        const file = fileInput.files[0];
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]); // Extract Base64 part
-        reader.onerror = reject;
+    
+        // Read the file as Base64
+        reader.onload = function (event) {
+            const base64Data = event.target.result.split(',')[1]; // Remove the "data:*/*;base64," prefix
+            const fileName = file.name;
+    
+            const body = {
+                imageData: base64Data,
+                filename: fileName,
+                'customLabels': customLabels,
+            };
+    
+            const params = {
+                
+            };
+    
+            const additionalParams = {
+                headers: {
+                    'x-amz-meta-customlabels': customLabels || '',
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Headers': 'Content-Type, x-amz-meta-customLabels',
+                    'Access-Control-Allow-Methods': '*',
+                },
+            };
+    
+            // Call the uploadPost method (or adjust to your API Gateway endpoint)
+            apigClient.uploadPut(params, body, additionalParams)
+                .then(function (result) {
+                    console.log('Upload response:', result);
+                    alert('Photo uploaded successfully!');
+                })
+                .catch(function (error) {
+                    console.error('Error during upload:', error);
+                    alert('Error during upload. Check the console for details.');
+                });
+        };
+    
+        // Read the file as a data URL (Base64)
         reader.readAsDataURL(file);
     });
-}
+
+    // Function to display search results
+    function displayResults(photos) {
+        const resultsDiv = $('#results');
+        resultsDiv.empty(); // Clear previous results
+    
+        // Check if photos is an array
+        if (Array.isArray(photos)) {
+            photos.forEach((photo) => {
+                const photoDiv = $('<div class="photo"></div>'); // Create a container div for each photo
+            
+                // Create an image element
+                const img = $('<img>')
+                    .attr('src', photo.URL) // Set the image source to photo.URL
+                    .attr('alt', photo.Title || 'Photo'); // Use photo.Title for the alt attribute or a default value
+            
+                // Create a title element for the photo
+                const title = $('<h4>')
+                    .text(photo.Title || 'Untitled'); // Set the title text or use a default value
+            
+                // Create a labels element and format the labels as a comma-separated string
+                const labels = $('<p>')
+                    .text(photo.Labels ? `Labels: ${photo.Labels.join(', ')}` : 'No labels available'); // Format labels
+            
+                // Append the title, image, and labels to the photoDiv
+                photoDiv.append(title);
+                photoDiv.append(img);
+                photoDiv.append(labels);
+            
+                // Append the photoDiv to the results container
+                resultsDiv.append(photoDiv);
+            });
+            if (photos.length === 0) {
+                resultsDiv.append('<p>No photos found.</p>');
+            }
+        } else {
+            console.error('Invalid photos data:', photos);
+            resultsDiv.append('<p>Unexpected response format.</p>');
+        }
+    }
+});

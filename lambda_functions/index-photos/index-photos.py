@@ -6,6 +6,7 @@ from datetime import datetime
 def lambda_handler(event, context):
     try:
         # Initialize OpenSearch client
+        print('Event: ',event)
         host = "search-photos-uzrb3scixtjfenq6thuj4jqzna.aos.us-east-1.on.aws"
         opensearch = OpenSearch(
             hosts=[{'host': host, 'port': 443}],
@@ -41,10 +42,15 @@ def lambda_handler(event, context):
 
                 # Retrieve custom labels from metadata
                 s3_metadata = s3_client.head_object(Bucket=bucket, Key=photo)
-                custom_labels_header = s3_metadata['Metadata'].get('customlabels', '')
-                custom_labels = [label.strip().lower() for label in custom_labels_header.split(',,,') if label.strip()]
+                custom_labels_header = s3_metadata['Metadata'].get('x-amz-meta-customlabels', '')
+                custom_labels = [label.strip().lower() for label in custom_labels_header.split(',') if label.strip()]
+                for i in range(len(custom_labels)):
+                    custom_labels[i]=custom_labels[i].split(',')
+                    temp=''
+                    for letter in custom_labels[i]:
+                        temp+=letter
+                    custom_labels[i]=temp
                 print(f"Custom Labels: {custom_labels}")
-
                 # Detect labels using Rekognition
                 rekognition_response = rekognition_client.detect_labels(
                     Image={'Bytes': image_data},
@@ -72,6 +78,12 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 200,
+            'headers': {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "*"
+            },
             'body': json.dumps({'message': 'Success'})
         }
 
@@ -79,5 +91,11 @@ def lambda_handler(event, context):
         print(f"Error: {str(e)}")
         return {
             'statusCode': 500,
+            'headers': {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Allow-Methods": "*"
+            },
             'body': json.dumps(f'Error processing event: {str(e)}')
         }

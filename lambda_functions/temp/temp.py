@@ -11,16 +11,14 @@ def lambda_handler(event, context):
 
     try:
         # Extract custom labels from headers (comma-separated string)
-        custom_labels_header = event['headers'].get('x-amz-meta-customlabels', '')
-
-        # Parse the request body
-        body = json.loads(event['body'])
+        custom_labels_header = event.get('customLabels', '')
 
         # Extract image data and filename
-        image_data = body['imageData']  # Base64-encoded image string
-        file_name = body['filename']   # Desired filename
+        image_data = event['imageData']  # Base64-encoded image string
+        file_name = event['filename']   # Desired filename
         bucket_name = 'assign3-photos' # S3 bucket name
 
+        print (custom_labels_header)
         # Decode the Base64 string into image bytes
         image_bytes = base64.b64decode(image_data)
 
@@ -35,7 +33,7 @@ def lambda_handler(event, context):
             Body=image_bytes,
             ContentType='image/png',  # Adjust based on your image type
             Metadata={
-                'customlabels': ','.join(custom_labels_header)  # Store the labels as a comma-separated string
+                'x-amz-meta-customlabels': custom_labels_header  # Store the labels as a comma-separated string
             }
         )
 
@@ -43,7 +41,7 @@ def lambda_handler(event, context):
             "statusCode": 200,
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Or replace '*' with the specific domain
-                "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS",
+                "Access-Control-Allow-Methods": "*",
                 "Access-Control-Allow-Headers": "Content-Type, x-amz-meta-customLabels"
             },
             "body": json.dumps({
@@ -57,7 +55,7 @@ def lambda_handler(event, context):
             "statusCode": 500,
             "headers": {
                 "Access-Control-Allow-Origin": "*",  # Or replace '*' with the specific domain
-                "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS",
+                "Access-Control-Allow-Methods": "*",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization"
             },
             "body": json.dumps({

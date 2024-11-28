@@ -1,0 +1,73 @@
+import json
+import boto3
+
+def lambda_handler(event, context):
+    
+    # Event can be null
+    if (event is None):
+        return None
+
+    sessionId = event['sessionId']
+    intent = event['sessionState']['intent']['name']
+
+    slots_ = []
+    
+    if (intent == 'SearchIntent'):
+        sessionState = event['sessionState']
+        interpretations = event['interpretations']
+        
+        slots = sessionState['intent']['slots']
+        
+        print (slots)
+        #slots['k2']
+        if (slots['keyword'] is not None):
+            slots_.append(slots['keyword']['value']['interpretedValue'])
+        
+        if (slots['k2'] is not None):
+            slots_.append(slots['k2']['value']['interpretedValue'])
+
+        response = {
+            'messages': [
+                {'contentType': 'PlainText', 'content': ','.join(slots_)}
+            ],
+            'sessionId' : sessionId,
+            'sessionState': {
+                'dialogAction': {
+                    'type':"Close"
+                },
+                'intent':{
+                    'name': "SearchIntent",
+                    'state': "Fulfilled",
+                    'slots' : slots
+                }       
+            }
+        }
+        
+
+        print (json.dumps(response))
+        
+        return response
+    
+    else:
+        # Need to validate the slot values.
+        
+        response = {
+            'messages': [
+                {'contentType': 'PlainText', 'content': 'Not found'}
+            ],
+            'sessionId': sessionId,
+            'sessionState' : {
+                'dialogAction':{
+                    'type':"Close"
+                },
+                'intent':{
+                    'name': "SearchIntent",
+                    'state': "Fulfilled",
+                    'slots' : slots
+                }
+            }
+        }
+        
+        return response
+        
+        
