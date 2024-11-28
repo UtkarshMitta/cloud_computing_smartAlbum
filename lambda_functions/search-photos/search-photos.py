@@ -17,8 +17,22 @@ def lambda_handler(event, context):
         
         # Get keywords from Lex bot
         keywords = get_keywords(inputText)
+        if (keywords == ""):
+            return {
+                'statusCode': 200,
+                'headers': {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "Content-Type",
+                    "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
+                },
+                'body': json.dumps({"results": [],
+                                    "error": "Unable to retrieve keywords.."})
+            }
+        
         keywords = keywords.split(',')
 
+        
         print('Keywords:', keywords)
         
         # Get image locations based on keywords
@@ -44,7 +58,8 @@ def lambda_handler(event, context):
                 "Access-Control-Allow-Headers": "Content-Type",
                 "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
             },
-            'body': json.dumps({"error": str(e)})
+            'body': json.dumps({"results": [],
+                                "error": str(e)})
         }
 
 
@@ -59,6 +74,10 @@ def get_keywords(input_text):
     )
     
     print('Response: ',response)
+    
+    if (response.get('messages', '') == ''):
+        return ""
+
     return response['messages'][0]['content']
 
 
@@ -84,6 +103,7 @@ def get_image_locations(keywords):
     
     # Parse image URLs from response
     image_array = []
+    unique_urls = set()
     for hit in response_data['hits']['hits']:
         objectKey = hit['_source']['objectKey']
         bucket = hit['_source']['bucket']
@@ -93,25 +113,20 @@ def get_image_locations(keywords):
             image_labels = hit['_source']['labels'][:2]
         else:
             image_labels = hit['_source']['labels']
-        print ("image_labels", image_labels)
-        print (hit['_source']['objectKey'])
+        #print ("image_labels", image_labels)
+        #print (hit['_source']['objectKey'])
+        
         image_title = hit['_source']['objectKey']
         image_url = f"https://{bucket}.s3.amazonaws.com/{objectKey}"
-        if (len(image_array) > 0 and 
-            image_url not in image_array['URL']):  # Avoid duplicates
 
+        if (image_url not in unique_urls):
             image_array.append({
                 "URL": image_url,
                 "Labels": image_labels,
                 "Title": image_title
             })
-        
-        if (len(image_array) == 0):
-            image_array.append({
-                "URL": image_url,
-                "Labels": image_labels,
-                "Title": image_title
-            })
+
+        unique_urls.add(image_url)
     
     print("Image URLs:", image_array)
     return image_array
