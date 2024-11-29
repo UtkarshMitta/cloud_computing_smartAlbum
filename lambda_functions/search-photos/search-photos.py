@@ -3,7 +3,10 @@ import boto3
 import requests
 import botocore.exceptions
 
-
+"""
+Testing codepipeline for our assignment
+should reflect on search-photos
+"""
 def lambda_handler(event, context):
     try:
         print('Event:', event)

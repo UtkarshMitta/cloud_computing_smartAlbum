@@ -4,6 +4,11 @@ from opensearchpy import OpenSearch, RequestsHttpConnection
 from datetime import datetime
 # This comit is for testing the codepipeline in lambda function
 # This should reflect on the lambda instance on AWS
+
+"""
+Testing codepipeline for our assignment
+should reflect on index-photos
+"""
 def lambda_handler(event, context):
     try:
         # Initialize OpenSearch client
