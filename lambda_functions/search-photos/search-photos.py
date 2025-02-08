@@ -88,9 +88,9 @@ def get_keywords(input_text):
 
 def get_image_locations(keywords):
     # Configure OpenSearch endpoint and request headers
-    endpoint = 'https://search-photos-uzrb3scixtjfenq6thuj4jqzna.aos.us-east-1.on.aws/_search'
+    endpoint = 'https://search-photos-***************.aos.us-east-1.on.aws/_search'
     headers = {'Content-Type': 'application/json'}
-    auth = ('Utkarsh@2002', 'Utkarsh@2002')  # Replace with your OpenSearch credentials
+    auth = ('************', '***********')  # Replace with your OpenSearch credentials
 
     # Prepare the query for OpenSearch
     prepared_q = [{"match": {"labels": keyword}} for keyword in keywords]
