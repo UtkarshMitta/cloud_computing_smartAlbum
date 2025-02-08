@@ -10,11 +10,11 @@ def lambda_handler(event, context):
     try:
         # Initialize OpenSearch client
         print('Event: ',event)
-        host = "search-photos-uzrb3scixtjfenq6thuj4jqzna.aos.us-east-1.on.aws"
+        host = "search-photos-****************.aos.us-east-1.on.aws"
         opensearch = OpenSearch(
             hosts=[{'host': host, 'port': 443}],
             use_ssl=True,
-            http_auth=('Utkarsh@2002', 'Utkarsh@2002'),
+            http_auth=('**********', '**********'),
             verify_certs=True,
             connection_class=RequestsHttpConnection
         )
